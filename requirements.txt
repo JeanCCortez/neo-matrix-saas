@@ -1,0 +1,33 @@
+# Dependencias para NEO MATRIX SaaS
+
+# Core
+fastapi==0.109.1
+uvicorn==0.27.0
+python-dotenv==1.0.0
+
+# Banco de dados
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9  # PostgreSQL
+
+# Autenticacao e seguranca
+bcrypt==4.1.2
+slowapi==0.1.8  # Rate limiting
+python-jose==3.3.0  # JWT (futuro)
+
+# Cache e performance
+redis==4.6.0
+
+# Migracao de dados
+pgloader==3.6.9  # SQLite -> PostgreSQL
+
+# IBM Quantum (cliente)
+qiskit==0.45.1
+qiskit-ibmq-provider==0.20.2
+
+# Outros
+pydantic==2.5.3
+python-multipart==0.0.6  # Upload de arquivos (futuro)
+
+# Dev (opcional)
+pytest==7.4.3
+httpx==0.26.0

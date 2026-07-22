@@ -1,0 +1,90 @@
+# docker-compose.yml para NEO MATRIX SaaS
+# Inclui:
+#   - Servico da API (FastAPI)
+#   - PostgreSQL (producao)
+#   - Redis (para cache SPAM e rate limiting futuro)
+#   - pgAdmin (opcional, para gerenciar o PostgreSQL)
+
+version: '3.8'
+
+services:
+  # -------------------
+  # API (FastAPI)
+  # -------------------
+  neo_api:
+    build: .
+    container_name: neo_api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - NEO_DB_URL=postgresql://neo_user:neo_pass@neo_postgres:5432/neomatrix
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000
+      - REDIS_URL=redis://neo_redis:6379/0
+    depends_on:
+      - neo_postgres
+      - neo_redis
+    volumes:
+      - .:/app
+    networks:
+      - neo_network
+
+  # -------------------
+  # PostgreSQL
+  # -------------------
+  neo_postgres:
+    image: postgres:15-alpine
+    container_name: neo_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=neo_user
+      - POSTGRES_PASSWORD=neo_pass
+      - POSTGRES_DB=neomatrix
+    ports:
+      - "5432:5432"
+    volumes:
+      - neo_postgres_data:/var/lib/postgresql/data
+    networks:
+      - neo_network
+
+  # -------------------
+  # Redis (cache SPAM e rate limiting)
+  # -------------------
+  neo_redis:
+    image: redis:7-alpine
+    container_name: neo_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - neo_redis_data:/data
+    networks:
+      - neo_network
+
+  # -------------------
+  # pgAdmin (opcional, para gerenciar o PostgreSQL)
+  # -------------------
+  neo_pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: neo_pgadmin
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@neomatrix.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - neo_postgres
+    networks:
+      - neo_network
+
+# -------------------
+# Volumes e Networks
+# -------------------
+volumes:
+  neo_postgres_data:
+  neo_redis_data:
+
+networks:
+  neo_network:
+    driver: bridge

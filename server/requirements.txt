@@ -1,0 +1,12 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic[email]==2.9.2
+sqlalchemy==2.0.35
+qiskit==1.4.1
+qiskit-ibm-runtime==0.37.0
+qiskit-aer==0.17.2
+numpy
+requests
+bcrypt==4.2.0
+slowapi==0.1.9
+pytest==8.3.3
