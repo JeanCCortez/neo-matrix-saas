@@ -15,7 +15,7 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update && apt-get install -y --no-install-recommends gcc python3-dev
 
 # Copia e instala dependencias Python
-COPY requirements.txt .
+COPY server/requirements.txt .
 RUN pip install --user -r requirements.txt
 
 # -------------------
@@ -27,7 +27,7 @@ FROM python:3.11-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV NEO_DB_URL=postgresql://user:pass@postgres:5432/neomatrix  # Default para docker-compose
+ENV NEO_DB_URL=postgresql://user:pass@postgres:5432/neomatrix
 
 # Instala dependencias runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
