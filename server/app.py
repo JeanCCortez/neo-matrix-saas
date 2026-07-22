@@ -16,9 +16,9 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, Request
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -392,8 +392,10 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
 # --- Initialize DB ---
 Base.metadata.create_all(bind=engine)
 
-# --- Mount Static Files ---
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# --- Mount Static Files (only if directory exists) ---
+if os.path.exists("static"):
+    from fastapi.staticfiles import StaticFiles
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
     import uvicorn
