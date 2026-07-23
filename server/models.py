@@ -11,7 +11,7 @@ import secrets
 import hashlib
 import logging
 from datetime import datetime
-from sqlalchemy import Column, String, Integer, Boolean, DateTime, Float, ForeignKey, Text, create_engine
+from sqlalchemy import Column, String, Integer, Boolean, DateTime, Float, ForeignKey, Text, JSON, create_engine
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 import bcrypt
@@ -82,6 +82,10 @@ class User(Base):
     tokens_balance = Column(Integer, default=10)  # 10 tokens de teste inicial
     is_admin = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
+    data_deletion_requested = Column(Boolean, default=False)
+    data_deletion_requested_at = Column(DateTime, nullable=True)
+    survey_responses = Column(JSON, nullable=True)
     would_subscribe = Column(Boolean, nullable=True)  # pesquisa de intencao
     subscription_feedback = Column(Text, nullable=True)
 

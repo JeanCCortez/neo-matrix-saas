@@ -14,9 +14,9 @@ ENV PYTHONUNBUFFERED 1
 # Instala dependencias de build
 RUN apt-get update && apt-get install -y --no-install-recommends gcc python3-dev
 
-# Copia e instala dependencias Python
+# Copia e instala dependencias Python em /install (acessivel a qualquer usuario)
 COPY server/requirements.txt .
-RUN pip install --user -r requirements.txt
+RUN pip install --prefix=/install -r requirements.txt
 
 # -------------------
 # Stage 2: Runtime
@@ -29,16 +29,13 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV NEO_DB_URL=postgresql://user:pass@postgres:5432/neomatrix
 
-# Instala dependencias runtime
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Instala dependencias runtime (libpq para psycopg2-binary)
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia arquivos do builder
-COPY --from=builder /root/.local /root/.local
+# Copia pacotes para /usr/local (site-packages global, acessivel a todos usuarios)
+COPY --from=builder /install /usr/local
 COPY . .
-
-# Garante que scripts em .local sejam encontrados
-ENV PATH=/root/.local/bin:$PATH
 
 # Cria usuario nao-root para rodar a aplicacao
 RUN useradd -m neo_user && chown -R neo_user:neo_user /app

@@ -21,7 +21,6 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, JSON, Float
 from sqlalchemy.orm import declarative_base
@@ -29,7 +28,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from server.models import User as DBUser
+from server.models import User as DBUser, verify_password as _model_verify_password, hash_password as _model_hash_password
 from server.rate_limiter import limiter
 import requests
 import smtplib
@@ -40,7 +39,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-in-prod')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./quantum.db")
+DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("NEO_DB_URL", "sqlite:///./quantum.db")
 IBM_QUANTUM_API_URL = os.getenv("IBM_QUANTUM_API_URL", "https://api.quantum-computing.ibm.com")
 
 # --- Logging ---
@@ -57,7 +56,11 @@ app.state.limiter = limiter
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
 ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS if o.strip()]
 if not ALLOWED_ORIGINS:
-    raise ValueError("ALLOWED_ORIGINS env var is required (comma-separated domains)")
+    logger.warning(
+        "ALLOWED_ORIGINS env var not set — defaulting to [\"*\"]. "
+        "Set ALLOWED_ORIGINS=https://yourdomain.com in production!"
+    )
+    ALLOWED_ORIGINS = ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -102,7 +105,6 @@ class QuantumJob(BaseModel):
     shots: int = 1024
 
 # --- Security ---
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
 
 # --- Database Session ---
@@ -115,10 +117,10 @@ def get_db():
 
 # --- Auth Utils ---
 def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password, hashed_password)
+    return _model_verify_password(plain_password, hashed_password)
 
 def get_password_hash(password: str):
-    return pwd_context.hash(password)
+    return _model_hash_password(password)
 
 def get_user(db: Session, email: str):
     return db.query(DBUser).filter(DBUser.email == email).first()
@@ -127,7 +129,7 @@ def authenticate_user(db: Session, email: str, password: str):
     user = get_user(db, email)
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.password_hash):
         return False
     return user
 
@@ -206,7 +208,7 @@ async def register_user(
         raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_password = get_password_hash(user.password)
-    db_user = DBUser(email=user.email, hashed_password=hashed_password)
+    db_user = DBUser(email=user.email, password_hash=hashed_password)
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -379,7 +381,10 @@ async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
 Base.metadata.create_all(bind=engine)
 
 # --- Mount Static Files ---
-app.mount("/static", StaticFiles(directory="static"), name="static")
+if os.path.isdir("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+else:
+    logger.warning("'static' directory not found — skipping static file serving")
 
 if __name__ == "__main__":
     import uvicorn
