@@ -27,7 +27,7 @@ FROM python:3.11-slim
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV NEO_DB_URL=postgresql://user:pass@postgres:5432/neomatrix
+ENV NEO_DB_URL=sqlite:///./neomatrix.db
 
 # Instala dependencias runtime (libpq para psycopg2-binary)
 RUN apt-get update && apt-get install -y --no-install-recommends libpq5 \
