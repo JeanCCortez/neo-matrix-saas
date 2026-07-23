@@ -55,16 +55,17 @@ app.state.limiter = limiter
 # CORS — ALLOWED_ORIGINS obrigatório em produção (lista separada por vírgula)
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "").split(",")
 ALLOWED_ORIGINS = [o.strip() for o in ALLOWED_ORIGINS if o.strip()]
+_cors_allow_credentials = bool(ALLOWED_ORIGINS)
 if not ALLOWED_ORIGINS:
     logger.warning(
-        "ALLOWED_ORIGINS env var not set — defaulting to [\"*\"]. "
+        "ALLOWED_ORIGINS env var not set — defaulting to [\"*\"] with credentials disabled. "
         "Set ALLOWED_ORIGINS=https://yourdomain.com in production!"
     )
     ALLOWED_ORIGINS = ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=_cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
