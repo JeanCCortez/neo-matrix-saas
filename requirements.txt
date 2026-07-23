@@ -18,7 +18,6 @@ python-jose==3.3.0  # JWT (futuro)
 redis==4.6.0
 
 # Migracao de dados
-pgloader==3.6.9  # SQLite -> PostgreSQL
 
 # IBM Quantum (cliente)
 qiskit==0.45.1
