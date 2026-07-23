@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import FastAPI, Depends, HTTPException, status, BackgroundTasks, Request
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -23,17 +24,19 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, Integer, String, Boolean, DateTime, JSON, Float
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from server.models import User as DBUser
+from server.rate_limiter import limiter
 import requests
 import smtplib
 from email.mime.text import MIMEText
 
 # --- Configurações ---
-SECRET_KEY = os.environ["SECRET_KEY"]  # Falha se não configurado — nunca use fallback
+SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-in-prod')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -48,7 +51,6 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="Smith Program API", version="1.0.0")
 
 # Rate Limiter
-limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 
 # CORS — ALLOWED_ORIGINS obrigatório em produção (lista separada por vírgula)
@@ -68,22 +70,6 @@ app.add_middleware(
 Base = declarative_base()
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# --- Models ---
-class DBUser(Base):
-    __tablename__ = "users"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    is_active = Column(Boolean, default=True)
-    is_admin = Column(Boolean, default=False)
-    tokens_balance = Column(Integer, default=100)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_login = Column(DateTime, nullable=True)
-    data_deletion_requested = Column(Boolean, default=False)
-    data_deletion_requested_at = Column(DateTime, nullable=True)
-    survey_responses = Column(JSON, nullable=True)
 
 # --- Schemas ---
 class User(BaseModel):
